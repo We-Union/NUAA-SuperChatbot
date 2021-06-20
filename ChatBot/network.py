@@ -102,8 +102,8 @@ class Decoder(nn.Module):
         # current_output : [B, 1, hidden_size]
         # current_hidden : [1, B, hidden_size]
 
-        # 这里拿current_output当做current_hidden来参与attention运算
-        # 当然，直接拿current_hidden也行
+        # Here, current_output is current_hidden to do attention calculate
+        # of course, you can directly use current_hidden
         attention_vector = self.attention(current_output, encoder_output)
         # attention_vector : [B, 1, hidden_size]
 
