@@ -34,7 +34,7 @@ class Attention(nn.Module):
 
     def forward(self, current_hidden : Tensor, encoder_output : Tensor):
         # calculate the score
-        score = self.score_dict[self._score_name]
+        score = self.score_dict[self._score_name](current_hidden, encoder_output)
         # use softmax to map score into weight alpha
         alpha = nn.functional.softmax(score, dim=1)
         # accomplish this through broadcast calculation

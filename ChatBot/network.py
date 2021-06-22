@@ -1,10 +1,9 @@
-from numpy.core.defchararray import encode
 from torch import nn, Tensor
 import torch
 import numpy as np
 from torch.nn import Embedding
-from attention import Attention
-from constant import *
+from ChatBot.attention import Attention
+from ChatBot.constant import *
 
 class Encoder(nn.Module):
     def __init__(self, embedding_dim : int, hidden_size : int, n_layer : int = 1, dropout : float = 0.):
@@ -14,10 +13,10 @@ class Encoder(nn.Module):
             n_layer : layer of RNN
             dropout : possibility of that each RNN cell is dropped
         """
-        self._embedding_dim = embedding_dim
-        self._hidden_size = hidden_size
-        self._n_layer = n_layer
-        self._dropout = dropout
+        self.__embedding_dim = embedding_dim
+        self.__hidden_size = hidden_size
+        self.__n_layer = n_layer
+        self.__dropout = dropout
         super().__init__()
 
         self.__rnn = nn.GRU(
@@ -26,8 +25,10 @@ class Encoder(nn.Module):
             num_layers=n_layer,
             dropout=(0 if n_layer == 1 else dropout),
             bidirectional=True,
-            batch_first=True                        # this is necessary
-        )
+            batch_first=True                        
+        )   
+
+        # batch_first is necessary
 
     def forward(self, embedded_index_seq : Tensor, index_seq_length : Tensor, h0 : Tensor = None):
         """
@@ -36,7 +37,6 @@ class Encoder(nn.Module):
             index_seq_length : represent valid length of each line in index_sequence, shape is (B, )
             h0 : first hidden tensor in RNN
         """
-
         # in order to avoid the same zero padded mapped into different value instead of making a sparse matrix
         # we should compress the sequence of word vectors, using pack_padded_sequence api in nn.utils.rnn
         packed = nn.utils.rnn.pack_padded_sequence(
@@ -54,35 +54,37 @@ class Encoder(nn.Module):
         )
         # outputs shape : (B, max_length, 2 * hidden_size)
         # transform bidirectional rnn into one channel
-        outputs = outputs[..., : self._hidden_size] + outputs[..., self._hidden_size : ]
+        outputs = outputs[..., : self.__hidden_size] + outputs[..., self.__hidden_size : ]
+
         # outputs shape : (B, max_length, hidden_size)
-        # hidden shape : (B, 2, hidden_size)
+        # hidden shape : (2, B, hidden_size)
         return outputs, hidden
 
 class Decoder(nn.Module):
-    def __init__(self, score_name : str, hidden_size : int, vocab_size : int, n_layer : int = 1, dropout : float = 0.):
+    def __init__(self, score_name : str, embedding_dim : int, hidden_size : int, vocab_size : int, n_layer : int = 1, dropout : float = 0.):
         """
             score_name : name of score function used in attention module
-            embedding : embedding matrix
+            embedding_dim : length of vector word
             hidden_size : hidden size of RNN
             vocab_size : size of vocab
             n_layer : layer of RNN
             dropout : possibility of that each cell is dropped
         """
         
-        self._score_name = score_name
-        self._hidden_size = hidden_size
-        self._vocab_size = vocab_size
-        self._n_layer = n_layer
-        self._dropout = dropout
-
-        # 定义或获取前向传播需要的算子
+        self.__score_name = score_name
+        self.__hidden_size = hidden_size
+        self.__vocab_size = vocab_size
+        self.__n_layer = n_layer
+        self.__dropout = dropout
+        super().__init__()
+        # function used in forward 
         # self.__embedding_dropout = nn.Dropout(dropout)
         self.__rnn = nn.GRU(
-            input_size=hidden_size,
+            input_size=embedding_dim,
             hidden_size=hidden_size,
             num_layers=n_layer,
             dropout=(0 if n_layer == 1 else dropout),
+            bidirectional=True,
             batch_first=True
         )
         self.__attention = Attention(score_name, hidden_size)
@@ -91,16 +93,18 @@ class Decoder(nn.Module):
 
     def forward(self, pre_embedded_predict_index : Tensor, pre_hidden : Tensor, encoder_output : Tensor):
         """
-            pre_embedded_predict_index:  pre index sequence                   (B, 1)
-            pre_hidden: hidden layer of pre decoder             (B, 2, hidden_size)
-            encoder_output:  total output of encoder            (B, max_length, hidden_size)
+            pre_embedded_predict_index:  pre embedded index sequence     (B, 1, embedding_dim)
+            pre_hidden: hidden layer of pre decoder                      (2, B, hidden_size)
+            encoder_output:  total output of encoder                     (B, max_length, hidden_size)
         """
+        print(pre_embedded_predict_index.shape, pre_hidden.shape)
         current_output, current_hidden = self.__rnn(pre_embedded_predict_index, pre_hidden)
         # current_output : [B, 1, hidden_size]
         # current_hidden : [1, B, hidden_size]
 
         # Here, current_output is current_hidden to do attention calculate
         # of course, you can directly use current_hidden
+        current_output = current_output[..., : self.__hidden_size] + current_output[..., self.__hidden_size : ]
         attention_vector = self.__attention(current_output, encoder_output)
         # attention_vector : [B, 1, hidden_size]
 
@@ -125,13 +129,13 @@ class CBNet(nn.Module):
         """
         if encoder_hidden_size < decoder_hidden_size:
             raise ValueError("encoder's hidden size must be greater than that of decoder!!!")
-        self._embedding_dim = embedding_dim
-        self._encoder_hidden_size = encoder_hidden_size
-        self._decoder_hidden_size = decoder_hidden_size
-        self._attention_score_name = attention_score_name
-        self._vocab_size = vocab_size
-        self._n_layer = n_layer
-        self._dropout = dropout
+        self.__embedding_dim = embedding_dim
+        self.__encoder_hidden_size = encoder_hidden_size
+        self.__decoder_hidden_size = decoder_hidden_size
+        self.__attention_score_name = attention_score_name
+        self.__vocab_size = vocab_size
+        self.__n_layer = n_layer
+        self.__dropout = dropout
         super().__init__()
         self.__encoder = Encoder(
             embedding_dim=embedding_dim,
@@ -141,6 +145,7 @@ class CBNet(nn.Module):
         )
         self.__decoder = Decoder(
             score_name=attention_score_name,
+            embedding_dim=embedding_dim,
             hidden_size=decoder_hidden_size,
             vocab_size=vocab_size,
             n_layer=n_layer,
@@ -169,11 +174,11 @@ class CBNet(nn.Module):
         encoder_output, encoder_hidden = self.__encoder(embedded_seq, index_seq_length, h0)
 
         # initial the first input of decoder
-        decoder_input = SOS_TOKEN * torch.ones(size=[BATCH_SIZE], dtype=torch.int64)
+        decoder_input = SOS_TOKEN * torch.ones(size=[index_seq.shape[0], 1], dtype=torch.int64)
         decoder_input = decoder_input.to(DEVICE)
 
         # clip the pre decoder_hidden_size of the hidden size of encoder
-        decoder_hidden = encoder_hidden[:self._decoder_hidden_size]
+        decoder_hidden = encoder_hidden[..., :self.__decoder_hidden_size]
 
         predict_result = torch.FloatTensor()
         predict_result.to(DEVICE)
@@ -197,9 +202,10 @@ class CBNet(nn.Module):
     def predict(self, index_seq : Tensor, index_seq_length : Tensor, h0 : Tensor = None):
         # for the forward logic of encoder, we must use index_seq_length
         encoder_output, encoder_hidden = self.__encoder(self.__embedding(index_seq), index_seq_length, h0)
+
         # initial the input of decoder
-        decoder_hidden = encoder_hidden[:self._decoder_hidden_size]
-        decoder_input = torch.tensor([[SOS_TOKEN]], dtype=torch.int64)
+        decoder_hidden = encoder_hidden[..., :self._decoder_hidden_size]
+        decoder_input = torch.tensor([SOS_TOKEN for _ in range(index_seq.shape[0])], dtype=torch.int64).reshape([-1, 1])
 
         predict_index = []
         predict_index_confidence = []
@@ -210,11 +216,13 @@ class CBNet(nn.Module):
                 pre_hidden=decoder_hidden, 
                 encoder_output=encoder_output
             )
-            max_p, index = torch.max(output, dim=1)
-            predict_index.append(index.item())
-            predict_index_confidence.append(max_p.item())
-            decoder_input = index.unsqueeze(0)
+
+            index = torch.argmax(output, dim=1)
+            predict_index.append(index.tolist())
+            predict_index_confidence.append(output.gather(dim=1, index=index.reshape([-1, 1])).tolist())
+            decoder_input = index.unsqueeze(1)
             decoder_hidden = hidden
+
         return predict_index, predict_index_confidence
 
 
@@ -230,23 +238,4 @@ class CBNet(nn.Module):
     
     @property
     def decoder(self):
-        return self.__decoder
-
-if __name__ == "__main__":
-    
-    m = Embedding(
-        num_embeddings=5,
-        embedding_dim=10
-    )
-
-    network = CBNet(
-        embedding_dim=10,
-        encoder_hidden_size=64,
-        decoder_hidden_size=64,
-        attention_score_name="dot",
-        vocab_size=3000,
-        n_layer=1,
-        dropout=0
-    )
-
-    
+        return self.__decoder    
