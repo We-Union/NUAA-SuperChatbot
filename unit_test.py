@@ -1,6 +1,6 @@
 from pprint import pprint
-from re import ASCII
 from ChatBot.network import *
+from ChatBot.dataloader import *
 import json
 
 def test_CBNet():
@@ -25,4 +25,6 @@ def test_vocab():
         a = json.load(fp=f)
     print(a["word2index"]["人工智能"])
 
-test_vocab()
+
+def test_dataloader():
+    ...

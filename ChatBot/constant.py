@@ -8,7 +8,7 @@ EOS_TOKEN = 2       # token for the end of one sentence
 UNK_TOKEN = 3       # work that doesn't exist in the vocab
 
 SPLIT_DIVIDER = " | "           # parameter of split when divide the pair string
-JSON_IO_PARAMETER = {"ensure_ascii" : False, "indent" : 4}
+JSON_IO_PARAMETER = {"ensure_ascii" : False, "indent" : 4}     # position arguments when call json IO API
 
 MAX_RESPONSE_LENGTH = 20        # max length of the response sentence
 

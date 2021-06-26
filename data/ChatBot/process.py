@@ -1,12 +1,9 @@
-from os import environ
 from sys import path
 from typing import Dict, List
 path.append(".")
 
 from itertools import zip_longest
 from os import listdir
-import random
-import torch
 import json
 import jieba
 import tqdm
@@ -114,7 +111,7 @@ def transform(data_dir : str):
         with open(file_path, "w", encoding="utf-8") as f:
             f.writelines(total_pairs)
 
-def merge(new_file : str, *data_dir):
+def merge_csv(new_file : str, *data_dir):
     total_pairs = []
     for _dir in data_dir:
         for file in listdir(f"./data/ChatBot/{_dir}"):
@@ -135,6 +132,6 @@ if __name__ == "__main__":
     # merge("./data/ChatBot/ensemble/small_samples.csv", "3")
     main(
         pairs_csv_path="./data/ChatBot/ensemble/small_samples.csv",
-        target_index_path="./data/ChatBot/ensemble/small_samples_index_seq.json",
-        target_vocab_path="./data/ChatBot/ensemble/small_samples_vocab.json"
+        target_index_path="./data/ChatBot/ensemble/small_samples_pairs.json",
+        target_vocab_path="./data/ChatBot/ensemble/small_samples_vocab.json"    
     )
