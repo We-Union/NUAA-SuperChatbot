@@ -5,6 +5,7 @@ __pycache__/
 
 *.txt
 *.csv
+!requirements.txt
 
 # C extensions
 *.so
