@@ -10,19 +10,19 @@ def align_batch_with_padded(batch : List[List[int]], return_mask : bool = False,
     padded_tensor = torch.LongTensor(zipped_list).t()
     # mask for loss calculation
     if return_mask:
-        mask_tensor = torch.BoolTensor(padded_tensor).t()
+        mask_tensor = torch.BoolTensor(zipped_list).t()
     else:
         mask_tensor = None
     return padded_tensor, mask_tensor
 
-def DataLoader(pairs : List[List[int]], batch_size : int = BATCH_SIZE, use_shuffle : bool = True) -> Generator[Dict]:
+def DataLoader(pairs : List[List[int]], batch_size : int = BATCH_SIZE, use_shuffle : bool = True) -> Generator:
     """
-        return : batch_info:
+        batch_info field:
         - input_batch_tensor
         - input_length_tensor
         - output_batch_tensor
         - mask_tensor
-        - max_input_length
+        - max_output_length
     """
     if use_shuffle:
         shuffle(pairs)
@@ -33,9 +33,12 @@ def DataLoader(pairs : List[List[int]], batch_size : int = BATCH_SIZE, use_shuff
         if len(batch) == batch_size:
             # sort for pack
             batch.sort(key=lambda x : len(x[0]), reverse=True)
-            max_input_length = len(batch[0][0])
+
             input_batch  = [p[0] for p in batch]
-            output_batch = [p[1] for p in batch]
+            output_batch, max_output_length = [], 0
+            for p in batch:
+                output_batch.append(p[1])
+                max_output_length = max(max_output_length, len(p[1]))
 
             input_length_tensor = torch.LongTensor([len(b) for b in input_batch])
 
@@ -48,6 +51,7 @@ def DataLoader(pairs : List[List[int]], batch_size : int = BATCH_SIZE, use_shuff
                 "input_length_tensor" : input_length_tensor,
                 "output_batch_tensor" : output_batch_tensor,
                 "mask_tensor" : mask_tensor,
-                "max_input_length" : max_input_length
+                "max_output_length" : max_output_length,
+                "batch_size" : batch_size
             }
 

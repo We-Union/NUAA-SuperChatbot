@@ -97,7 +97,7 @@ class Decoder(nn.Module):
             pre_hidden: hidden layer of pre decoder                      (2, B, hidden_size)
             encoder_output:  total output of encoder                     (B, max_length, hidden_size)
         """
-        print(pre_embedded_predict_index.shape, pre_hidden.shape)
+        # print(pre_embedded_predict_index.shape, pre_hidden.shape)
         current_output, current_hidden = self.__rnn(pre_embedded_predict_index, pre_hidden)
         # current_output : [B, 1, hidden_size]
         # current_hidden : [1, B, hidden_size]
