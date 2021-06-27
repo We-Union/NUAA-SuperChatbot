@@ -49,10 +49,10 @@ class Vocab(object):
     # dump word2index, index2word and wordcount to the path as json
     def dump_to_vocab(self, path : str, reminder : bool = True):
         vocab = {
+            "vocab_size" : self.__vocab_size,
             "word2index" : self.__word2index,
             "index2word" : self.__index2word,
-            "word_count" : self.__word_count,
-            "vocab_size" : self.__vocab_size
+            "word_count" : self.__word_count
         }
         with open(path, "w", encoding="utf-8") as f:
             json.dump(obj=vocab, fp=f, **JSON_IO_PARAMETER)
