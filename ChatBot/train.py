@@ -1,7 +1,7 @@
 import tqdm
 from random import random
 import time
-from typing import Dict, Generator, Tuple
+from typing import Dict, Generator, Tuple, Union
 from torch import optim
 import os
 from ChatBot.dataloader import DataLoader
@@ -11,7 +11,7 @@ def ensure_create_folder(dir_name : str):
     if not os.path.exists(dir_name):
         os.makedirs(dir_name)
 
-def get_datetime_info(day_spliter : str = "-", time_spliter : str = "_"):
+def get_datetime_info(day_spliter : str = "-", time_spliter : str = "_") -> Dict:
     tlc = time.localtime()
     today = [str(tlc.tm_year), str(tlc.tm_mon), str(tlc.tm_mday)]
     today = day_spliter.join(today)
@@ -20,6 +20,20 @@ def get_datetime_info(day_spliter : str = "-", time_spliter : str = "_"):
     return {
         "today" : today, "cur_time" : cur_time
     }
+
+def color_wrapper(s : object, color : Union[int, str]) -> str:
+    color_dict = {
+        "RED"    : 31,
+        "GREEN"  : 32,
+        "ORANGE" : 33,
+        "BLUE"   : 34,
+        "PURPLE" : 35,
+        "CYAN"   : 36,
+        "WHITE"  : 37
+    }
+    if isinstance(color, str):
+        color = color_dict[color]
+    return "\033[{}m{}\033[0m".format(color, s)
 
 def maskNLLLoss(output : torch.FloatTensor, target : torch.LongTensor, mask : torch.LongTensor) -> Tuple[torch.FloatTensor, int]:
     """
@@ -73,9 +87,15 @@ def train_batch(batch : Dict, model : CBNet, optimizer : optim.Optimizer, clip_t
         "label_word_num" : word_num
     }
 
-def train_loader(loader : Generator, model : CBNet, optimizer : optim.Optimizer, clip_threshold : float, TF_ratio : float = TEACHER_FORCING_RATE) -> Dict:
+def train_loader(loader : Generator, batch_num : int, model : CBNet, optimizer : optim.Optimizer, clip_threshold : float, TF_ratio : float = TEACHER_FORCING_RATE, display_progress_bar : bool = False, cur_epoch : int = None) -> Dict:
+    if display_progress_bar and cur_epoch is None:
+        raise ValueError("If you choose display_progress_bar mode, please make sure argument cur_epoch is not None!!!")
     word_wise_losses = []
-    for batch in loader:
+    index_iter = range(batch_num)
+    if display_progress_bar:
+        index_iter = tqdm.tqdm(index_iter, **BATCH_LOOP_TQDM)
+    
+    for batch_index, batch in zip(index_iter, loader):
         train_batch_info = train_batch(
             batch=batch,
             model=model,
@@ -84,12 +104,29 @@ def train_loader(loader : Generator, model : CBNet, optimizer : optim.Optimizer,
             TF_ratio=TF_ratio
         )
         word_wise_losses.append(train_batch_info["mask_loss"] / train_batch_info["label_word_num"])
+        if display_progress_bar:
+            if batch_index == batch_num - 1:
+                index_iter.set_description_str("{} {}".format(
+                    color_wrapper("Finish Epoch", GREEN),
+                    color_wrapper(cur_epoch, GREEN)
+                ))
+            else:
+                index_iter.set_description_str("{} {:<3}".format(
+                    color_wrapper("Batch", BLUE), 
+                    color_wrapper(batch_index, ORANGE)
+                ))
+            index_iter.set_postfix_str("{}:{}".format(
+                color_wrapper("word_loss", BLUE), 
+                color_wrapper(round(word_wise_losses[-1], ndigits=LOSS_DISPLAY_BIT), GREEN)
+            ))
+
     return {
         "word_wise_losses" : word_wise_losses
     }
 
 def train(version : str, pairs, Epoch : int, model : CBNet, optimizer : optim.Optimizer, batch_size : int = BATCH_SIZE, save_dir : str = "./dist/", 
-            save_optimizer : bool = False, clip_threshold : float = 50, TF_ratio : float = TEACHER_FORCING_RATE, save_interval : int = 10, display_progress_bar : bool = False):
+            save_model : bool = True, save_optimizer : bool = False, clip_threshold : float = 50, TF_ratio : float = TEACHER_FORCING_RATE, save_interval : int = 10, 
+            display_progress_bar : bool = False):
     """
         pairs : data
         Epoch : epoch of training
@@ -99,6 +136,8 @@ def train(version : str, pairs, Epoch : int, model : CBNet, optimizer : optim.Op
         save_optimizer : whether save the argument of optimizer
         clip_threshold : threshold to clip the gradient
         TF_ratio : possibility to adopt strategy of teacher forcing
+        save_interval : interval of epoch to save the model
+        display_progress_bar : whether to show
     """
     today = get_datetime_info()["today"]
     save_dir = os.path.join(save_dir, today)
@@ -106,20 +145,31 @@ def train(version : str, pairs, Epoch : int, model : CBNet, optimizer : optim.Op
     start_time = time.time()
     word_wise_losses = []
     all_cur_time = []
-    iter_body = tqdm.tqdm(range(Epoch)) if display_progress_bar else range(Epoch)
+    iter_body = tqdm.tqdm(range(Epoch), **EPOCH_LOOP_TQDM) if display_progress_bar else range(Epoch)
     for epoch in iter_body:
         loader = DataLoader(pairs=pairs, batch_size=batch_size)
         train_info = train_loader(
             loader=loader,
+            batch_num=len(pairs) // batch_size,
             model=model,
             optimizer=optimizer,
             clip_threshold=clip_threshold,
-            TF_ratio=TF_ratio
+            TF_ratio=TF_ratio,
+            display_progress_bar=True,
+            cur_epoch=epoch
         )
         word_wise_losses.append(train_info["word_wise_losses"])
+        if display_progress_bar:
+            iter_body.set_description_str("{} {:<3}".format(
+                color_wrapper("Epoch", BLUE),
+                color_wrapper(epoch, CYAN))
+            )
+            iter_body.set_postfix_str("{}:{}".format(
+                color_wrapper("Average loss", BLUE),
+                color_wrapper(round(sum(train_info["word_wise_losses"]) / len(train_info["word_wise_losses"]), ndigits=LOSS_DISPLAY_BIT), GREEN)
+            ))
     
-    
-        if (epoch + 1) % save_interval == 0 or epoch + 1 == Epoch:
+        if ((epoch + 1) % save_interval == 0 or epoch + 1 == Epoch) and save_model:
             cost_time = time.time() - start_time
             time_info = get_datetime_info()
             today = time_info["today"]
@@ -139,7 +189,7 @@ def train(version : str, pairs, Epoch : int, model : CBNet, optimizer : optim.Op
             check_point_save_path = os.path.join(save_folder, "model.tar")
             ensure_create_folder(save_folder)
             torch.save(obj=save_dict, f=check_point_save_path)
-            print("\033[32m[{} {}]\033[0mSave model to \033[32m{}\033[0m.".format(time_info["today"], cur_time,check_point_save_path))
+            # print("\033[32m[{} {}]\033[0mSave model to \033[32m{}\033[0m.".format(time_info["today"], cur_time,check_point_save_path))
     
     # TODO : finish here
     loss_dict = {

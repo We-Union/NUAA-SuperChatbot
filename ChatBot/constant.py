@@ -29,3 +29,27 @@ DROPOUT               = 0.1
 EPOCH_NUM             = 15
 PRINT_INTERVAL        = 50
 SAVE_INTERVAL         = 900
+
+
+
+# unimportant argument
+EPOCH_LOOP_TQDM = {
+    "ncols" : 90,        # max length of progressbar
+    "desc" : "Start Epoch Loop...",
+}
+
+BATCH_LOOP_TQDM = {
+    "ncols" : 90,        # max length of progressbar
+    "desc" : "Start New Batch Loop...",
+}
+
+LOSS_DISPLAY_BIT = 5
+
+# ASCII color index
+RED    = 31
+GREEN  = 32
+ORANGE = 33
+BLUE   = 34
+PURPLE = 35
+CYAN   = 36 
+WHITE  = 37
