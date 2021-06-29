@@ -168,6 +168,7 @@ class CBNet(nn.Module):
     def forward(self, index_seq : Tensor, index_seq_length : Tensor, max_label_sentence_length : int, h0 : Tensor = None, use_teacher_forcing : bool = False, label_sentence : Tensor = None):
         if use_teacher_forcing and label_sentence is None:
             raise ValueError("You adopt teacher forcing strategy but not provide label sentence!!!")
+
         # index_seq shape : (B, max_length)
         embedded_seq = self.__embedding(index_seq)
         # embedded_seq shape : (B, max_length, embedding_dim)
@@ -181,7 +182,7 @@ class CBNet(nn.Module):
         decoder_hidden = encoder_hidden[..., :self.__decoder_hidden_size]
 
         predict_result = torch.FloatTensor()
-        predict_result.to(DEVICE)
+        predict_result = predict_result.to(DEVICE)
 
         for i in range(max_label_sentence_length):
             output, hidden = self.__decoder(
@@ -191,6 +192,7 @@ class CBNet(nn.Module):
             )
             # output shape : (B, vocab_size)
             # predict_result : (B, i, vocab_size)
+            
             predict_result = torch.cat([predict_result, output.unsqueeze(1)], dim=1)
             decoder_input = label_sentence[:, i] if use_teacher_forcing else torch.argmax(output, dim=1)
             decoder_input = decoder_input.reshape([-1, 1])

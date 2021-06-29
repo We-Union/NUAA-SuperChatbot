@@ -129,3 +129,5 @@ def test_inference():
         output_sentence = "".join(output_sentence)
         print(color_wrapper("Minus", PURPLE), ">", color_wrapper(output_sentence, PURPLE))
         input_sentence = input("锦恢 > ")
+
+test_train()

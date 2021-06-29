@@ -140,6 +140,7 @@ def train(version : str, pairs, Epoch : int, model : CBNet, optimizer : optim.Op
         save_interval : interval of epoch to save the model
         display_progress_bar : whether to show
     """
+    model.to(DEVICE)
     today = get_datetime_info()["today"]
     save_dir = os.path.join(save_dir, today)
     ensure_create_folder(save_dir)
