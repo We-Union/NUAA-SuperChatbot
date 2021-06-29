@@ -1,3 +1,4 @@
+from numpy.lib.function_base import average
 import tqdm
 from random import random
 import time
@@ -160,13 +161,14 @@ def train(version : str, pairs, Epoch : int, model : CBNet, optimizer : optim.Op
         )
         word_wise_losses.append(train_info["word_wise_losses"])
         if display_progress_bar:
+            average_loss = sum(train_info["word_wise_losses"]) / len(train_info["word_wise_losses"])
             iter_body.set_description_str("{} {:<3}".format(
                 color_wrapper("Epoch", BLUE),
                 color_wrapper(epoch, CYAN))
             )
             iter_body.set_postfix_str("{}:{}".format(
                 color_wrapper("Average loss", BLUE),
-                color_wrapper(round(sum(train_info["word_wise_losses"]) / len(train_info["word_wise_losses"]), ndigits=LOSS_DISPLAY_BIT), GREEN)
+                color_wrapper(round(average_loss, ndigits=LOSS_DISPLAY_BIT), GREEN)
             ))
     
         if ((epoch + 1) % save_interval == 0 or epoch + 1 == Epoch) and save_model:
@@ -185,7 +187,7 @@ def train(version : str, pairs, Epoch : int, model : CBNet, optimizer : optim.Op
                 "optimizer_state_dict" : optimizer.state_dict() if save_optimizer else None,
                 "loss" : train_info["word_wise_losses"]
             }
-            save_folder = os.path.join(save_dir, cur_time)
+            save_folder = os.path.join(save_dir, "[{}]loss={}".format(cur_time, average_loss))
             check_point_save_path = os.path.join(save_folder, "model.tar")
             ensure_create_folder(save_folder)
             torch.save(obj=save_dict, f=check_point_save_path)

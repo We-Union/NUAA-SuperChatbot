@@ -204,7 +204,7 @@ class CBNet(nn.Module):
         encoder_output, encoder_hidden = self.__encoder(self.__embedding(index_seq), index_seq_length, h0)
 
         # initial the input of decoder
-        decoder_hidden = encoder_hidden[..., :self._decoder_hidden_size]
+        decoder_hidden = encoder_hidden[..., :self.__decoder_hidden_size]
         decoder_input = torch.tensor([SOS_TOKEN for _ in range(index_seq.shape[0])], dtype=torch.int64).reshape([-1, 1])
 
         predict_index = []

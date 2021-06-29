@@ -5,7 +5,14 @@ __pycache__/
 
 *.txt
 *.csv
+*.json
+*.tgz
+
+
+!stopwords.txt
 !requirements.txt
+!small_samples_pairs.json
+!small_samples_vocab.json
 
 # C extensions
 *.so

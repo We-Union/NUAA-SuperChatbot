@@ -129,9 +129,9 @@ def main(pairs_csv_path : str, target_index_path : str, target_vocab_path : str)
     vocab.dump_to_vocab(target_vocab_path)
 
 if __name__ == "__main__":
-    # merge("./data/ChatBot/ensemble/small_samples.csv", "3")
+    # merge("./data/ChatBot/ensemble/ensemble.csv", "3")
     main(
-        pairs_csv_path="./data/ChatBot/ensemble/small_samples.csv",
-        target_index_path="./data/ChatBot/ensemble/small_samples_pairs.json",
-        target_vocab_path="./data/ChatBot/ensemble/small_samples_vocab.json"    
+        pairs_csv_path="./data/ChatBot/ensemble/ensemble.csv",
+        target_index_path="./data/ChatBot/ensemble/ensemble_pairs.json",
+        target_vocab_path="./data/ChatBot/ensemble/ensemble_vocab.json"    
     )
