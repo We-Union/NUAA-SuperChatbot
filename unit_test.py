@@ -74,9 +74,9 @@ def test_train():
         save_dir="./dist/ChatBot",
         save_model=True,   
         save_optimizer=False,
-        clip_threshold=50.0,
+        clip_threshold=CLIP_THRESHOLD,
         TF_ratio=TEACHER_FORCING_RATE,
-        save_interval=5,
+        save_interval=SAVE_INTERVAL,
         display_progress_bar=True
     )
 
@@ -129,5 +129,3 @@ def test_inference():
         output_sentence = "".join(output_sentence)
         print(color_wrapper("Minus", PURPLE), ">", color_wrapper(output_sentence, PURPLE))
         input_sentence = input("锦恢 > ")
-
-test_inference()
