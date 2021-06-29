@@ -41,7 +41,7 @@ class Encoder(nn.Module):
         # we should compress the sequence of word vectors, using pack_padded_sequence api in nn.utils.rnn
         packed = nn.utils.rnn.pack_padded_sequence(
             input=embedded_index_seq,
-            lengths=index_seq_length,
+            lengths=index_seq_length.cpu(),
             batch_first=True
         )
         # through RNN
