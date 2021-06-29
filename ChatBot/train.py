@@ -5,6 +5,7 @@ import time
 from typing import Dict, Generator, Tuple, Union
 from torch import optim
 import os
+import json
 from ChatBot.dataloader import DataLoader
 from ChatBot.network import *
 
@@ -140,7 +141,6 @@ def train(version : str, pairs, Epoch : int, model : CBNet, optimizer : optim.Op
         save_interval : interval of epoch to save the model
         display_progress_bar : whether to show
     """
-    model.to(DEVICE)
     today = get_datetime_info()["today"]
     save_dir = os.path.join(save_dir, today)
     ensure_create_folder(save_dir)
@@ -148,6 +148,14 @@ def train(version : str, pairs, Epoch : int, model : CBNet, optimizer : optim.Op
     word_wise_losses = []
     all_cur_time = []
     iter_body = tqdm.tqdm(range(Epoch), **EPOCH_LOOP_TQDM) if display_progress_bar else range(Epoch)
+    parameters = {
+        "embedding_dim" : EMBEDDING_DIM,
+        "encoder_hidden_size" : ENCODER_HIDDEN_SIZE,
+        "decoder_hidden_size" : DECODER_HIDDEN_SIZE,
+        "attention_score_name" : ATTENTION_SCORE_NAME
+    }
+    with open(os.path.join(save_dir, "parameter.json"), "w", encoding="utf-8") as f:
+        json.dump(obj=parameters, fp=f, **JSON_IO_PARAMETER)
     for epoch in iter_body:
         loader = DataLoader(pairs=pairs, batch_size=batch_size)
         train_info = train_loader(
@@ -188,17 +196,16 @@ def train(version : str, pairs, Epoch : int, model : CBNet, optimizer : optim.Op
                 "optimizer_state_dict" : optimizer.state_dict() if save_optimizer else None,
                 "loss" : train_info["word_wise_losses"]
             }
-            save_folder = os.path.join(save_dir, "[{}]loss={}".format(cur_time, average_loss))
+            save_folder = os.path.join(save_dir, "[{}]loss={:.5f}".format(cur_time, average_loss))
             check_point_save_path = os.path.join(save_folder, "model.tar")
             ensure_create_folder(save_folder)
             torch.save(obj=save_dict, f=check_point_save_path)
-            # print("\033[32m[{} {}]\033[0mSave model to \033[32m{}\033[0m.".format(time_info["today"], cur_time,check_point_save_path))
     
     # TODO : finish here
     loss_dict = {
         "word_wise_losses" : word_wise_losses
     }
-    import json
+    
     loss_file_name = "{}to{}.json".format(all_cur_time[0], all_cur_time[-1])
     with open(os.path.join(save_dir, loss_file_name), "w", encoding="utf-8") as f:
         json.dump(loss_dict, f)

@@ -61,9 +61,10 @@ def test_train():
         decoder_hidden_size=DECODER_HIDDEN_SIZE,
         attention_score_name=ATTENTION_SCORE_NAME,
         vocab_size=vocab_dict["vocab_size"],
-    )
+    ).to(DEVICE)
 
-    optimizer = optim.SGD(model.parameters(), lr=LEARNING_RATE)
+    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+
     train(
         version="0.0.0",
         pairs=data_dict["index_pairs"],
