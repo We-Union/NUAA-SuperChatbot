@@ -128,8 +128,9 @@ def main(pairs_csv_path : str, target_index_path : str, target_vocab_path : str)
     vocab.dump_to_vocab(target_vocab_path)
 
 if __name__ == "__main__":
+    name = "ensemble"
     main(
-        pairs_csv_path="./data/ChatBot/ensemble/small_samples.csv",
-        target_index_path="./data/ChatBot/ensemble/small_samples_pairs.json",
-        target_vocab_path="./data/ChatBot/ensemble/small_samples_vocab.json"    
+        pairs_csv_path=f"./data/ChatBot/ensemble/{name}.csv",
+        target_index_path=f"./data/ChatBot/ensemble/{name}_pairs.json",
+        target_vocab_path=f"./data/ChatBot/ensemble/{name}_vocab.json"    
     )
