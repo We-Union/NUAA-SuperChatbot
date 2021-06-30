@@ -35,13 +35,13 @@ class Vocab(object):
     
     # You can rewrite your logic of read data there
     def build_vocab(self, path : str):
-        for line in tqdm.tqdm(open(path, "r", encoding="utf-8")):
+        for line in tqdm.tqdm(open(path, "r", encoding="utf-8"), ncols=90):
             line = line.strip()
             for word in jieba.lcut(line):
                 self.__word_count[word] = self.__word_count.get(word, 0) + 1
         
         print("\033[32m", end="")
-        for key in tqdm.tqdm(self.__word_count):
+        for key in tqdm.tqdm(self.__word_count, ncols=90):
             if self.__word_count[key] >= self.__min_count:
                 self.__word2index[key] = self.__vocab_size
                 self.__index2word[self.__vocab_size] = key
@@ -96,7 +96,7 @@ class Vocab(object):
         
 
 def transform(data_dir : str):
-    for file in tqdm.tqdm(listdir(f"./data/ChatBot/{data_dir}")):
+    for file in tqdm.tqdm(listdir(f"./data/ChatBot/{data_dir}"), ncols=90):
         cur_pair = []
         total_pairs = []
         file_path = f"./data/ChatBot/{data_dir}/{file}"
