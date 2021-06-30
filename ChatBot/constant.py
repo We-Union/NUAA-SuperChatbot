@@ -15,12 +15,12 @@ JSON_IO_PARAMETER     = {"ensure_ascii" : False, "indent" : 4}     # position ar
 """
 EPOCH_NUM             = 30
 MAX_RESPONSE_LENGTH   = 20        # max length of the response sentence
-BATCH_SIZE            = 32
+BATCH_SIZE            = 128
 MAX_LENGTH            = 20
 MIN_COUNT             = 3
 TEACHER_FORCING_RATE  = 0.9      # possibility to adopt teacher forcing strategy
-CLIP_THRESHOLD        = 50.0     # clip of gradient
-LEARNING_RATE         = 1e-5
+CLIP_THRESHOLD        = 40.0     # clip of gradient
+LEARNING_RATE         = 1e-4
 
 PRINT_INTERVAL        = 50
 SAVE_INTERVAL         = 5
@@ -31,8 +31,8 @@ SAVE_INTERVAL         = 5
 EMBEDDING_DIM         = 512
 ENCODER_HIDDEN_SIZE   = 512
 DECODER_HIDDEN_SIZE   = 512
-ENCODER_N_LAYER       = 2
-DECODER_N_LAYER       = 2
+ENCODER_N_LAYER       = 10
+DECODER_N_LAYER       = 10
 DROPOUT               = 0.1
 ATTENTION_SCORE_NAME  = "dot"     # field: dot, general, concat
 
