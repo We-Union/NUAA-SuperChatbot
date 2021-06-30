@@ -10,11 +10,12 @@ import tqdm
 from ChatBot.constant import *
 
 class Vocab(object):
-    def __init__(self, name : str, vocab : Dict=None) -> None:
+    def __init__(self, name : str, vocab : Dict=None, min_count : int = 0) -> None:
         super().__init__()
         self.__name = name 
         self.__build = False
         self.__prune = False
+        self.__min_count = min_count
 
         self.__reserve_word_index = [PAD_TOKEN, SOS_TOKEN, EOS_TOKEN, UNK_TOKEN]
         self.__reserve_word_name = ["PAD", "SOS", "EOS", "UNK"]
@@ -37,13 +38,15 @@ class Vocab(object):
         for line in tqdm.tqdm(open(path, "r", encoding="utf-8")):
             line = line.strip()
             for word in jieba.lcut(line):
-                if word in self.__word2index:
-                    self.__word_count[word] += 1
-                else:
-                    self.__word_count[word] = 1
-                    self.__word2index[word] = self.__vocab_size
-                    self.__index2word[self.__vocab_size] = word
-                    self.__vocab_size += 1
+                self.__word_count[word] = self.__word_count.get(word, 0) + 1
+        
+        print("\033[32m", end="")
+        for key in tqdm.tqdm(self.__word_count):
+            if self.__word_count[key] >= self.__min_count:
+                self.__word2index[key] = self.__vocab_size
+                self.__index2word[self.__vocab_size] = key
+                self.__vocab_size += 1
+        print("\033[0m", end="")
         self.__build = True
 
     # dump word2index, index2word and wordcount to the path as json
@@ -57,7 +60,7 @@ class Vocab(object):
         with open(path, "w", encoding="utf-8") as f:
             json.dump(obj=vocab, fp=f, **JSON_IO_PARAMETER)
         if reminder:
-            print(f"Sucessfully dump to\033[32m{path}\033[0m!")
+            print(f"Sucessfully dump to\033[32m{path}\033[0m! vocab size:\033[32m{self.__vocab_size}\033[0m")
     
     # load pairs and transform to index sequence (unalign)
     def dump_to_index_seq(self, text_path : str, index_seq_path : str, use_local_vocab : bool = True, vocab : dict = None, reminder : bool = True):        
@@ -90,11 +93,7 @@ class Vocab(object):
         if reminder:
             print(f"Sucessfully dump to\033[32m{index_seq_path}\033[0m!")
 
-    # TODO : finish prune
-    def prune(self, min_count : int = 5):
-        # any words whose count >= 5 will be saved
-        if self.__prune:
-            raise ValueError("prune has been done!")
+        
 
 def transform(data_dir : str):
     for file in tqdm.tqdm(listdir(f"./data/ChatBot/{data_dir}")):
@@ -123,15 +122,14 @@ def merge_csv(new_file : str, *data_dir):
 
 # plain csv -> index sequence and json
 def main(pairs_csv_path : str, target_index_path : str, target_vocab_path : str):
-    vocab = Vocab(name="ChatBot", vocab=None)
+    vocab = Vocab(name="ChatBot", vocab=None, min_count=5)
     vocab.build_vocab(pairs_csv_path)
     vocab.dump_to_index_seq(pairs_csv_path, target_index_path)
     vocab.dump_to_vocab(target_vocab_path)
 
 if __name__ == "__main__":
-    # merge("./data/ChatBot/ensemble/ensemble.csv", "3")
     main(
-        pairs_csv_path="./data/ChatBot/ensemble/ensemble.csv",
-        target_index_path="./data/ChatBot/ensemble/ensemble_pairs.json",
-        target_vocab_path="./data/ChatBot/ensemble/ensemble_vocab.json"    
+        pairs_csv_path="./data/ChatBot/ensemble/small_samples.csv",
+        target_index_path="./data/ChatBot/ensemble/small_samples_pairs.json",
+        target_vocab_path="./data/ChatBot/ensemble/small_samples_vocab.json"    
     )
