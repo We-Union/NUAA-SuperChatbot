@@ -143,3 +143,15 @@ dmypy.json
 .idea
 /venv_linux
 /media
+
+venv
+*.sqlite3
+/*/migrations
+*.pyc
+file
+*.docx
+main.ini
+static_all
+reply_file
+venv_linux
+/reply/NUAASuperChatbot

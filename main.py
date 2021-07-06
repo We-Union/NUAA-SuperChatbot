@@ -169,7 +169,7 @@ def test_inference(vocab_path: str, model_path: str):
 command = "ffmpeg -i in.m4a -ac 1 -ar 16000 -y in.wav"
 
 
-def init(vocab_path: str = "./dist/cb_vocab.json", model_path: str="./dist/model.tar"):
+def init(vocab_path: str = "./dist/cb_vocab.json", model_path: str = "./dist/model.tar"):
     start_time = time()
     print(color_wrapper("正在加载词表...", GREEN), end="")
     with open(vocab_path, "r", encoding="utf-8") as f:
@@ -207,9 +207,15 @@ def init(vocab_path: str = "./dist/cb_vocab.json", model_path: str="./dist/model
         " ...成功载入{}! \033[{}m耗时{:.3f}s".format(color_wrapper("23_41_39/model.tar", PURPLE), GREEN, time() - start_time),
         GREEN))
     speaker = Speaker(SWEET_FEMALE)
-    return word2index,index2word,model,speaker
 
-def process(word2index,index2word,model,speaker,file_path):
+    if not os.path.exists("./media"):
+        os.makedirs("./media")
+    if not os.path.exists("./media/out"):
+        os.makedirs("./media/out")
+    return word2index, index2word, model, speaker
+
+
+def process(word2index, index2word, model, speaker, file_path):
     input_sentence = file_to_text(file_path)['result'][0]
     input_index_seq = [word2index.get(word, UNK_TOKEN) for word in jieba.lcut(input_sentence)]
     output_index_seq, _ = model.predict(
@@ -219,15 +225,17 @@ def process(word2index,index2word,model,speaker,file_path):
 
     output_sentence = [index2word[index[0]] for index in output_index_seq]
     output_sentence = "".join(output_sentence)
-    output_file_path  = speaker.speak_to_file(output_sentence,"./media/out"+os.path.split(file_path)[-1])
-    return input_sentence,output_sentence,output_file_path
+    output_file_path = "./media/out/" + os.path.split(file_path)[-1]
+    speaker.speak_to_file(output_sentence, output_file_path)
+    return input_sentence, output_sentence, output_file_path
+
 
 if __name__ == "__main__":
-    word2index,index2word,model,speaker = init()
+    word2index, index2word, model, speaker = init()
 
-    file_path = "./media/in.wav"
+    file_path = "./media/ql.wav"
 
-    input_sentence,output_sentence,output_file_path=process(word2index,index2word,model,speaker,file_path)
+    input_sentence, output_sentence, output_file_path = process(word2index, index2word, model, speaker, file_path)
     print(input_sentence)
     print(output_sentence)
     print(output_file_path)
