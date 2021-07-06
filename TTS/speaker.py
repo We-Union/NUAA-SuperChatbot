@@ -1,4 +1,4 @@
-from TTS.constant import client
+from TTS.constant import *
 from time import time
 
 class Speaker(object):

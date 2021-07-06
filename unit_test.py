@@ -123,6 +123,7 @@ def test_inference(vocab_path : str, model_path : str):
 
     print(color_wrapper("请输入你的第一句话", BLUE))
     input_sentence = input("锦恢 > ")
+
     while input_sentence not in QUIT_WORDS:
         input_index_seq = [word2index.get(word, UNK_TOKEN) for word in jieba.lcut(input_sentence)]
         output_index_seq, _ = model.predict(
@@ -134,6 +135,7 @@ def test_inference(vocab_path : str, model_path : str):
         output_sentence = "".join(output_sentence)
         print(color_wrapper("Minus", PURPLE), ">", color_wrapper(output_sentence, PURPLE))
         input_sentence = input("锦恢 > ")
+
 
 def test_audio_chatbot(vocab_path : str, model_path : str, speakder_dict : dict):
     start_time = time()
@@ -190,16 +192,30 @@ def test_audio_chatbot(vocab_path : str, model_path : str, speakder_dict : dict)
         print(color_wrapper("Minus", PURPLE), ">", color_wrapper(output_sentence, PURPLE))
         input_sentence = input("锦恢 > ")
 
-# test_train(dataset="ensemble")
+# test_train(dataset="ensemble
 
 # test_inference(
-#     vocab_path="./data/ChatBot/ensemble/cb_vocab.json",
-#     model_path="./dist/ChatBot/2021-7-3/[19_57_21]loss=0.01034/model.tar"
+#     vocab_path="./dist/cb_vocab.json",
+#     model_path="./dist/model.tar"
 # )
-
 
 # test()
 # song = AudioSegment.from_mp3("./test.mp3")
 # play(song)
 
-print(file_to_text("./test.wav"))
+# print(file_to_text("./test.wav"))
+
+# speaker = Speaker(
+#     character=SWEET_FEMALE,
+#     speed=5,
+#     pit=5,
+#     volume=5,
+#     language="zh"
+# )
+#
+# speaker.speak_to_file("你好，世界！", "./media/test.wav", append=False)
+
+command = "ffmpeg -i in.m4a -ac 1 -ar 16000 -y in.wav"
+
+print(file_to_text("./media/in.wav"))
+

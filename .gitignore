@@ -142,3 +142,4 @@ dmypy.json
 /torch
 .idea
 /venv_linux
+/media
