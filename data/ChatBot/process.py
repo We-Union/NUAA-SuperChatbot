@@ -16,6 +16,7 @@ class Vocab(object):
         self.__build = False
         self.__prune = False
         self.__min_count = min_count
+        self.__max_vocab_size = 5000
 
         self.__reserve_word_index = [PAD_TOKEN, SOS_TOKEN, EOS_TOKEN, UNK_TOKEN]
         self.__reserve_word_name = ["PAD", "SOS", "EOS", "UNK"]
@@ -41,7 +42,7 @@ class Vocab(object):
                 self.__word_count[word] = self.__word_count.get(word, 0) + 1
         
         print("\033[32m", end="")
-        for key in tqdm.tqdm(self.__word_count, ncols=90):
+        for key in tqdm.tqdm(sorted(self.__word_count, key=lambda x : self.__word_count[x], reverse=True)[:self.__max_vocab_size], ncols=90):
             if self.__word_count[key] >= self.__min_count:
                 self.__word2index[key] = self.__vocab_size
                 self.__index2word[self.__vocab_size] = key
@@ -128,7 +129,12 @@ def main(pairs_csv_path : str, target_index_path : str, target_vocab_path : str)
     vocab.dump_to_vocab(target_vocab_path)
 
 if __name__ == "__main__":
-    name = "ensemble"
+    max_pairs = 100000
+    pairs = open("./data/ChatBot/ensemble/ensemble.csv", "r", encoding="utf-8").readlines()[:max_pairs]
+    name = "cb"
+    with open(f"./data/ChatBot/ensemble/{name}.csv", "w", encoding="utf-8") as f:
+        f.writelines(pairs)
+    
     main(
         pairs_csv_path=f"./data/ChatBot/ensemble/{name}.csv",
         target_index_path=f"./data/ChatBot/ensemble/{name}_pairs.json",

@@ -1,10 +1,14 @@
 from pprint import pprint
 from torch import optim
-import jieba
 from ChatBot.network import *
 from ChatBot.dataloader import *
 from ChatBot.train import *
+from TTS.speaker import *
+from ASR.recognizer import *
+from pydub import AudioSegment
+from pydub.playback import play
 import json
+import jieba
 
 def test_CBNet():
     network = CBNet(
@@ -49,10 +53,10 @@ def test_get_datatime_info():
     info = get_datetime_info()
     print(info)
 
-def test_train():
-    with open("./data/ChatBot/ensemble/small_samples_pairs.json", "r", encoding="utf-8") as f:
+def test_train(dataset : str):
+    with open(f"./data/ChatBot/ensemble/{dataset}_pairs.json", "r", encoding="utf-8") as f:
         data_dict = json.load(fp=f)
-    with open("./data/ChatBot/ensemble/small_samples_vocab.json", "r", encoding="utf-8") as f:
+    with open(f"./data/ChatBot/ensemble/{dataset}_vocab.json", "r", encoding="utf-8") as f:
         vocab_dict = json.load(fp=f)
 
     model = CBNet(
@@ -81,26 +85,26 @@ def test_train():
         display_progress_bar=True
     )
 
-def test_inference():
-    start_time = time.time()
+def test_inference(vocab_path : str, model_path : str):
+    start_time = time()
     print(color_wrapper("正在加载词表...", GREEN), end="")
-    with open("./data/ChatBot/ensemble/small_samples_vocab.json", "r", encoding="utf-8") as f:
+    with open(vocab_path, "r", encoding="utf-8") as f:
         vocab_dict = json.load(fp=f)
     word2index : Dict = vocab_dict["word2index"]
     index2word : Dict = vocab_dict["index2word"]
-    print(color_wrapper(" ...完成! 耗时:{:.3f}s".format(time.time() - start_time), GREEN))
+    print(color_wrapper(" ...完成! 耗时:{:.3f}s".format(time() - start_time), GREEN))
 
-    start_time = time.time()
+    start_time = time()
     print(color_wrapper("重构index2word子表...", GREEN), end="")
     index2word = {int(k) : index2word[k] for k in index2word}
-    print(color_wrapper(" ...完成! 耗时:{:.3f}s".format(time.time() - start_time), GREEN))
+    print(color_wrapper(" ...完成! 耗时:{:.3f}s".format(time() - start_time), GREEN))
 
     print("正在加载中文分词模型...")
     print("\033[{}m".format(ORANGE))
     _ = jieba.lcut("你好，世界")
     print("\033[0m")
 
-    start_time = time.time()
+    start_time = time()
     print(color_wrapper("正在创建CBNet推理模型...", GREEN), end="")
     model = CBNet(
         embedding_dim=EMBEDDING_DIM,
@@ -109,13 +113,13 @@ def test_inference():
         attention_score_name=ATTENTION_SCORE_NAME,
         vocab_size=vocab_dict["vocab_size"],
     )
-    print(color_wrapper(" ...完成! 耗时{:.3f}s".format(time.time() - start_time), GREEN))
+    print(color_wrapper(" ...完成! 耗时{:.3f}s".format(time() - start_time), GREEN))
 
-    start_time = time.time()
+    start_time = time()
     print(color_wrapper("正在为CBNet推理模型装载模型参数...", GREEN), end="")
-    model_dict : Dict = torch.load("./dist/ChatBot/2021-6-28/23_41_39/model.tar")
+    model_dict : Dict = torch.load(model_path)
     model.load_state_dict(model_dict["model_state_dict"])
-    print(color_wrapper(" ...成功载入{}! \033[{}m耗时{:.3f}s".format(color_wrapper("23_41_39/model.tar", PURPLE),GREEN, time.time() - start_time), GREEN))
+    print(color_wrapper(" ...成功载入{}! \033[{}m耗时{:.3f}s".format(color_wrapper("23_41_39/model.tar", PURPLE),GREEN, time() - start_time), GREEN))
 
     print(color_wrapper("请输入你的第一句话", BLUE))
     input_sentence = input("锦恢 > ")
@@ -125,10 +129,77 @@ def test_inference():
             index_seq=torch.LongTensor([input_index_seq]),
             index_seq_length=torch.LongTensor([len(input_index_seq)])
         )
-        
+    
         output_sentence = [index2word[index[0]] for index in output_index_seq]
         output_sentence = "".join(output_sentence)
         print(color_wrapper("Minus", PURPLE), ">", color_wrapper(output_sentence, PURPLE))
         input_sentence = input("锦恢 > ")
 
-test_train()
+def test_audio_chatbot(vocab_path : str, model_path : str, speakder_dict : dict):
+    start_time = time()
+    print(color_wrapper("正在加载词表...", GREEN), end="")
+    with open(vocab_path, "r", encoding="utf-8") as f:
+        vocab_dict = json.load(fp=f)
+    word2index : Dict = vocab_dict["word2index"]
+    index2word : Dict = vocab_dict["index2word"]
+    print(color_wrapper(" ...完成! 耗时:{:.3f}s".format(time() - start_time), GREEN))
+
+    start_time = time()
+    print(color_wrapper("重构index2word子表...", GREEN), end="")
+    index2word = {int(k) : index2word[k] for k in index2word}
+    print(color_wrapper(" ...完成! 耗时:{:.3f}s".format(time() - start_time), GREEN))
+
+    print("正在加载中文分词模型...")
+    print("\033[{}m".format(ORANGE))
+    _ = jieba.lcut("你好，世界")
+    print("\033[0m")
+
+    start_time = time()
+    print(color_wrapper("正在创建CBNet推理模型...", GREEN), end="")
+    model = CBNet(
+        embedding_dim=EMBEDDING_DIM,
+        encoder_hidden_size=ENCODER_HIDDEN_SIZE,
+        decoder_hidden_size=DECODER_HIDDEN_SIZE,
+        attention_score_name=ATTENTION_SCORE_NAME,
+        vocab_size=vocab_dict["vocab_size"],
+    )
+    print(color_wrapper(" ...完成! 耗时{:.3f}s".format(time() - start_time), GREEN))
+
+    start_time = time()
+    print(color_wrapper("正在为CBNet推理模型装载模型参数...", GREEN), end="")
+    model_dict : Dict = torch.load(model_path)
+    model.load_state_dict(model_dict["model_state_dict"])
+    print(color_wrapper(" ...成功载入{}! \033[{}m耗时{:.3f}s".format(color_wrapper("23_41_39/model.tar", PURPLE),GREEN, time() - start_time), GREEN))
+
+    start_time = time()
+    print(color_wrapper("正在创建语音合成模型...", GREEN), end="")
+    speaker = Speaker(**speakder_dict)
+    print(color_wrapper(" ...成功创建! \033[{}m耗时{:.3f}s".format(GREEN, time() - start_time), GREEN))
+
+    print(color_wrapper("请输入你的第一句话", BLUE))
+    input_sentence = input("锦恢 > ")
+    while input_sentence not in QUIT_WORDS:
+        input_index_seq = [word2index.get(word, UNK_TOKEN) for word in jieba.lcut(input_sentence)]
+        output_index_seq, _ = model.predict(
+            index_seq=torch.LongTensor([input_index_seq]),
+            index_seq_length=torch.LongTensor([len(input_index_seq)])
+        )
+    
+        output_sentence = [index2word[index[0]] for index in output_index_seq]
+        output_sentence = "".join(output_sentence)
+        print(color_wrapper("Minus", PURPLE), ">", color_wrapper(output_sentence, PURPLE))
+        input_sentence = input("锦恢 > ")
+
+# test_train(dataset="ensemble")
+
+# test_inference(
+#     vocab_path="./data/ChatBot/ensemble/cb_vocab.json",
+#     model_path="./dist/ChatBot/2021-7-3/[19_57_21]loss=0.01034/model.tar"
+# )
+
+
+# test()
+# song = AudioSegment.from_mp3("./test.mp3")
+# play(song)
+
+print(file_to_text("./test.wav"))
