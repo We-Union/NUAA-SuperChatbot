@@ -50,8 +50,10 @@ class ReplyView(APIView):
         for chunk in file.chunks():
             destination.write(chunk)
         destination.close()
+        audio_file_fixed = os.path.join(dir_path, file_name[:-4] + "_fixed.wav")
+        os.system("ffmpeg -i "+audio_file+ " -ac 1 -ar 16000 -y "+audio_file_fixed)
 
-        submit_words, return_words, return_file = process(word2index, index2word, model, speaker, audio_file)
+        submit_words, return_words, return_file = process(word2index, index2word, model, speaker, audio_file_fixed)
 
         context['submit_words'] = submit_words
         context['return_words'] = return_words
