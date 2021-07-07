@@ -42,3 +42,7 @@ train(
 ```
 
 你可以在`./ChatBot/constants.py`中修改参数以适配训练，当打印信息让你比较满意时，你就可以考虑开始在超大样本上开始训练了。
+
+## 使用
+1. 首先使用`pip install -r requirements.txt`安装依赖。
+2. 使用`python manage.py runserver`启动项目，默认只有本机可访问，且端口为8000。
